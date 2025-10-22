@@ -11,7 +11,7 @@ public class Food implements Cloneable {
     private final String foodName;
     private final Helper.FoodType foodType;
 
-    private final double foodPrice;
+    private double foodPrice;
     private final List<String> foodIngredients;
     private List<Ingredient> additionalIngredients;
     private int amount;
@@ -36,6 +36,10 @@ public class Food implements Cloneable {
 
     public double getFoodPrice() {
         return foodPrice;
+    }
+
+    public void setFoodPrice(double price){
+        this.foodPrice = price;
     }
 
     public List<String> getFoodIngredients() {

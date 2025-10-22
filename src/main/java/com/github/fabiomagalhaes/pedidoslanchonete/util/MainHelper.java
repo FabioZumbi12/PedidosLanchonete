@@ -27,7 +27,7 @@ public class MainHelper {
             });
 
             HBox tag;
-            if (ingredient.equals("Pão") || ingredient.equals("Massa de Pastel") || editingFood.getFoodType().equals(Helper.FoodType.PORCAO)){
+            if (ingredient.equals("Pão") || ingredient.equals("Massa de Pastel") || !editingFood.getFoodType().equals(Helper.FoodType.LANCHE)){
                 tag = new HBox(lbl);
             } else {
                 tag = new HBox(lbl, btnRemove);

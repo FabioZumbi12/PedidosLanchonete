@@ -12,7 +12,8 @@ public class Helper {
     public static double dollarRate = 1.0;
     public enum FoodType {
         LANCHE,
-        PORCAO
+        PORCAO,
+        BEBIDA
     }
 
     public static String formatPrice(double price) {
@@ -23,10 +24,12 @@ public class Helper {
         return "USD " + String.format("%.2f", price * dollarRate);
     }
 
-    public static String GetImageType(FoodType type) {
-        return type == Helper.FoodType.LANCHE
-                ? "/images/sandwich.png"
-                : "/images/portion.png";
+    public static String getImageType(FoodType type) {
+        return switch (type) {
+            case FoodType.PORCAO -> "/images/portion.png";
+            case FoodType.LANCHE -> "/images/sandwich.png";
+            default -> "/images/refri.png";
+        };
     }
 
     public static void setupDollarRate() {

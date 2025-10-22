@@ -5,6 +5,7 @@ import com.github.fabiomagalhaes.pedidoslanchonete.entities.Ingredient;
 import com.github.fabiomagalhaes.pedidoslanchonete.entities.LoggedUser;
 
 import com.github.fabiomagalhaes.pedidoslanchonete.util.Helper;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,7 +21,10 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.util.Duration;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static com.github.fabiomagalhaes.pedidoslanchonete.Launcher.getMainDB;
@@ -54,8 +58,13 @@ public class MainController {
     public ImageView bgImage;
     public AnchorPane rootPane;
     public Label lblTotalFinish;
-    public Label lblItemsFinish;
     public Label lblAdicionaisFinish;
+    public Label lblDescontoFinish;
+    public Label lblSubtotalFinish;
+    public Label lblQtdFinish;
+    public Label lblItensFinish;
+    public AnchorPane pPayment;
+    public Label lblPaymentFooter;
 
     private Food editingFood;
 
@@ -78,6 +87,8 @@ public class MainController {
         pCardapio.setVisible(true);
         pEditar.setVisible(false);
         pFinish.setVisible(false);
+        pPayment.setVisible(false);
+        lblPaymentFooter.setText("");
 
         /* Restante dos objetos */
         lstCardapio.setItems(FXCollections.observableArrayList(getMainDB().getAllFoods()));
@@ -135,7 +146,7 @@ public class MainController {
                 if (empty || food == null) {
                     setGraphic(null);
                 } else {
-                    String imagePath = GetImageType(food.getFoodType());
+                    String imagePath = getImageType(food.getFoodType());
                     Image img = new Image(getClass().getResourceAsStream(imagePath));
                     icon.setImage(img);
                     icon.setFitWidth(110);
@@ -161,11 +172,15 @@ public class MainController {
             private final HBox hbox = new HBox(5);
             private final ImageView icon = new ImageView();
             private final VBox vbox = new VBox(-5);
+            private final VBox vboxSub = new VBox(-5);
 
             final Label nameLabel = new Label();
             final Label amountLabel = new Label();
             final Label priceLabel = new Label();
             final Label ingredientsLabel = new Label();
+
+            final Label subLabel = new Label();
+            final Label subAdditionalLabel = new Label();
 
             private final Button editButton = new Button("Editar");
             private final Button deleteButton = new Button("X");
@@ -175,7 +190,8 @@ public class MainController {
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
                 vbox.getChildren().addAll(nameLabel, priceLabel, ingredientsLabel);
-                hbox.getChildren().addAll(amountLabel, icon, vbox, spacer, editButton, deleteButton);
+                vboxSub.getChildren().addAll(subLabel, subAdditionalLabel);
+                hbox.getChildren().addAll(amountLabel, icon, vbox, spacer, vboxSub, editButton, deleteButton);
 
                 HBox.setMargin(editButton, new Insets(5, 0, 0, 0)); // top, right, bottom, left
                 HBox.setMargin(deleteButton, new Insets(5, 0, 0, 0));
@@ -218,11 +234,17 @@ public class MainController {
                 if (empty || food == null) {
                     setGraphic(null);
                 } else {
-                    String imagePath = GetImageType(food.getFoodType());
+                    String imagePath = getImageType(food.getFoodType());
                     Image img = new Image(getClass().getResourceAsStream(imagePath));
                     icon.setImage(img);
                     icon.setFitWidth(50);
                     icon.setFitHeight(50);
+
+                    subLabel.setText("Subtotal: " + formatPrice(food.getAmount() * food.getFoodPrice()));
+                    subLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+                    subAdditionalLabel.setText("Adicionais: " + formatPrice(food.getAmount() * food.getAdditionalIngredientsPrice()));
+                    subAdditionalLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
                     amountLabel.setText(food.getAmount() + "x");
                     amountLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
@@ -253,12 +275,13 @@ public class MainController {
         pCardapio.setVisible(false);
         pEditar.setVisible(true);
         pFinish.setVisible(false);
+        pPayment.setVisible(false);
 
         lblHeader.setText("Personalizar Pedido");
         lblErrorIngredients.setVisible(false);
         lblAdditionals.setVisible(false);
 
-        Image img = new Image(getClass().getResourceAsStream(GetImageType(editingFood.getFoodType())));
+        Image img = new Image(getClass().getResourceAsStream(getImageType(editingFood.getFoodType())));
         imgFood.setImage(img);
 
         tagsIngredients(editingFood, flwIngredients);
@@ -411,6 +434,8 @@ public class MainController {
         editingFood = null;
         pCardapio.setVisible(true);
         pEditar.setVisible(false);
+        pFinish.setVisible(false);
+        pPayment.setVisible(false);
         lblHeader.setText("Nosso Cardápio");
         checkCart();
     }
@@ -451,6 +476,7 @@ public class MainController {
         pCardapio.setVisible(true);
         pEditar.setVisible(false);
         pFinish.setVisible(false);
+        pPayment.setVisible(false);
         lblHeader.setText("Nosso Cardápio");
         checkCart();
     }
@@ -460,26 +486,60 @@ public class MainController {
 
         double total = 0;
         int itens = 0;
+        double totalLanches = 0;
         double adicionais = 0;
+        double desc = 0;
+        double subTotal = 0;
+
+        // Checar se tem X-Salada e Batata frita
+        if (loggedUser.selectedFoods.stream().anyMatch(f -> f.getFoodName().equals("X-Salada")) &&
+                loggedUser.selectedFoods.stream().anyMatch(f -> f.getFoodName().equals("Batata Frita"))
+        ){
+            Optional<Food> refri = loggedUser.selectedFoods.stream().filter(f -> f.getFoodName().equals("Refrigerante")).findFirst();
+            if (refri.isPresent()){
+                if (loggedUser.selectedFoods.stream().noneMatch(f ->
+                        f.getFoodName().equals("Refrigerante") &&
+                        f.getFoodPrice() == 0)){
+                    loggedUser.selectedFoods.add(new Food(1,"Refrigerante", 0, List.of("Coca-Cola"), FoodType.BEBIDA));
+                }
+            } else {
+                loggedUser.selectedFoods.add(new Food(1,"Refrigerante", 0, List.of("Coca-Cola"), FoodType.BEBIDA));
+            }
+        }
+
         for (Food food : loggedUser.selectedFoods){
             itens += food.getAmount();
-            adicionais += food.getAdditionalIngredientsPrice();
-            total += (food.getAmount() * food.getFoodPrice()) + food.getAdditionalIngredientsPrice();
+            totalLanches += food.getAmount() * food.getFoodPrice();
+            adicionais += food.getAmount() * food.getAdditionalIngredientsPrice();
+            total += food.getAmount() * (food.getFoodPrice() + food.getAdditionalIngredientsPrice());
+            subTotal = total;
+        }
+
+        // 3% de desconto se o valor total do pedido for acima de R$50,00
+        if (total > 50){
+            double descVl = total - (total * ((double) 3 /100));
+            desc = descVl - total;
+            total = descVl;
         }
 
         lblTotalFinish.setText("Total: "+formatPrice(total));
-        lblItemsFinish.setText("Itens: x" + itens);
+        lblQtdFinish.setText("Quantidade: " + itens);
+        lblItensFinish.setText("Itens: " + formatPrice(totalLanches));
         lblAdicionaisFinish.setText("Adicionais: "+formatPrice(adicionais));
+        lblDescontoFinish.setText("Descontos: " + (desc != 0 ? formatPrice(desc) + " (3%)" : "R$ 0,00"));
+        lblSubtotalFinish.setText("Subtotal: " + formatPrice(subTotal));
 
         pCardapio.setVisible(false);
         pEditar.setVisible(false);
         pFinish.setVisible(true);
+        pPayment.setVisible(false);
     }
 
     public void btnAddMaisFinishAction(ActionEvent actionEvent) {
         pCardapio.setVisible(true);
         pEditar.setVisible(false);
         pFinish.setVisible(false);
+        pPayment.setVisible(false);
         lblHeader.setText("Nosso Cardápio");
     }
 
@@ -488,10 +548,64 @@ public class MainController {
     }
 
     public void btnFinishAction(ActionEvent actionEvent) {
+        pCardapio.setVisible(false);
+        pEditar.setVisible(false);
+        pFinish.setVisible(false);
+        pPayment.setVisible(true);
+        pPayment.setDisable(false);
+
+        lblHeader.setText("Pagamento");
+        lblPaymentFooter.setText("");
     }
 
     public void onMouseClickCart(MouseEvent mouseEvent) {
         if (!loggedUser.selectedFoods.isEmpty())
+            setupFinish();
+    }
+
+    public void btnPagarDebito(ActionEvent actionEvent) {
+        setTextPayment("Aproxime ou insira seu cartão de Débito...");
+    }
+
+    public void btnPagarCredito(ActionEvent actionEvent) {
+        setTextPayment("Aproxime ou insira seu cartão de Crédito...");
+    }
+
+    public void btnPagarPix(ActionEvent actionEvent) {
+        setTextPayment("Escaneie o QR Code disponível no nosso balcão...");
+    }
+
+    private void setTextPayment(String texto){
+        pPayment.setDisable(true);
+        lblPaymentFooter.setText(texto);
+
+        PauseTransition etapa1 = new PauseTransition(Duration.seconds(3));
+        etapa1.setOnFinished(e -> lblPaymentFooter.setText("Processando pagamento..."));
+
+        PauseTransition etapa2 = new PauseTransition(Duration.seconds(6));
+        etapa2.setOnFinished(e -> lblPaymentFooter.setText("Pagamento aprovado\nImprimindo o cupom fiscal e o número do seu pedido\nMuito obrigado e volte sempre!"));
+
+        PauseTransition etapa3 = new PauseTransition(Duration.seconds(16));
+        etapa3.setOnFinished(e -> {
+            loggedUser.selectedFoods.clear();
+            editingFood = null;
+            checkCart();
+
+            pCardapio.setVisible(true);
+            pEditar.setVisible(false);
+            pFinish.setVisible(false);
+            pPayment.setVisible(false);
+            lblHeader.setText("Nosso Cardápio");
+
+            lblPaymentFooter.setText("");
+        });
+
+        etapa1.play();
+        etapa2.play();
+        etapa3.play();
+    }
+
+    public void btnBackCart(ActionEvent actionEvent) {
             setupFinish();
     }
 }
