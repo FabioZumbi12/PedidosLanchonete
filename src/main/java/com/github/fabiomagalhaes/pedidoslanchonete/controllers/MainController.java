@@ -209,6 +209,7 @@ public class MainController {
                     Food selectedFood = getItem();
                     if (selectedFood != null) {
                         loggedUser.selectedFoods.remove(selectedFood);
+                        setupFinish();
                     }
                     checkCart();
                 });
@@ -262,6 +263,9 @@ public class MainController {
                     } else {
                         ingredientsLabel.setVisible(false);
                     }
+
+                    deleteButton.setVisible(food.getFoodPrice() > 0);
+                    editButton.setVisible(food.getFoodPrice() > 0);
 
                     setGraphic(hbox);
                 }
@@ -490,6 +494,9 @@ public class MainController {
         double adicionais = 0;
         double desc = 0;
         double subTotal = 0;
+
+        // Limpar itens gratis
+        loggedUser.selectedFoods.removeIf(f -> f.getFoodPrice() == 0);
 
         // Checar se tem X-Salada e Batata frita
         if (loggedUser.selectedFoods.stream().anyMatch(f -> f.getFoodName().equals("X-Salada")) &&
