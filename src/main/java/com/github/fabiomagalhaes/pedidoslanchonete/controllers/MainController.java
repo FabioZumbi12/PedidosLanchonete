@@ -23,7 +23,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +64,7 @@ public class MainController {
     public Label lblItensFinish;
     public AnchorPane pPayment;
     public Label lblPaymentFooter;
+    public Label lblUSDFinish;
 
     private Food editingFood;
 
@@ -522,6 +522,7 @@ public class MainController {
             total = descVl;
         }
 
+        lblUSDFinish.setText(getDollarPrice(total));
         lblTotalFinish.setText("Total: "+formatPrice(total));
         lblQtdFinish.setText("Quantidade: " + itens);
         lblItensFinish.setText("Itens: " + formatPrice(totalLanches));
