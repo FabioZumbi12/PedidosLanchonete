@@ -4,6 +4,7 @@ import com.github.fabiomagalhaes.pedidoslanchonete.entities.Food;
 import com.github.fabiomagalhaes.pedidoslanchonete.entities.Ingredient;
 import com.github.fabiomagalhaes.pedidoslanchonete.entities.LoggedUser;
 
+import com.github.fabiomagalhaes.pedidoslanchonete.services.OrderService;
 import com.github.fabiomagalhaes.pedidoslanchonete.util.Helper;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
@@ -67,9 +68,11 @@ public class MainController {
     public Label lblUSDFinish;
 
     private Food editingFood;
+    private OrderService orderService;
 
     public MainController(){
         loggedUser = getUser();
+        orderService = new OrderService();
     }
 
     @FXML
@@ -488,54 +491,15 @@ public class MainController {
     private void setupFinish() {
         lblHeader.setText("Revisar Pedido");
 
-        double total = 0;
-        int itens = 0;
-        double totalLanches = 0;
-        double adicionais = 0;
-        double desc = 0;
-        double subTotal = 0;
+        OrderService.OrderSummary resumo = orderService.calcularResumoPedido(loggedUser.selectedFoods);
 
-        // Limpar itens gratis
-        loggedUser.selectedFoods.removeIf(f -> f.getFoodPrice() == 0);
-
-        // Checar se tem X-Salada e Batata frita
-        if (loggedUser.selectedFoods.stream().anyMatch(f -> f.getFoodName().equals("X-Salada")) &&
-                loggedUser.selectedFoods.stream().anyMatch(f -> f.getFoodName().equals("Batata Frita"))
-        ){
-            Optional<Food> refri = loggedUser.selectedFoods.stream().filter(f -> f.getFoodName().equals("Refrigerante")).findFirst();
-            if (refri.isPresent()){
-                if (loggedUser.selectedFoods.stream().noneMatch(f ->
-                        f.getFoodName().equals("Refrigerante") &&
-                        f.getFoodPrice() == 0)){
-                    loggedUser.selectedFoods.add(new Food(1,"Refrigerante", 0, List.of("Coca-Cola"), FoodType.BEBIDA));
-                }
-            } else {
-                loggedUser.selectedFoods.add(new Food(1,"Refrigerante", 0, List.of("Coca-Cola"), FoodType.BEBIDA));
-            }
-        }
-
-        for (Food food : loggedUser.selectedFoods){
-            itens += food.getAmount();
-            totalLanches += food.getAmount() * food.getFoodPrice();
-            adicionais += food.getAmount() * food.getAdditionalIngredientsPrice();
-            total += food.getAmount() * (food.getFoodPrice() + food.getAdditionalIngredientsPrice());
-            subTotal = total;
-        }
-
-        // 3% de desconto se o valor total do pedido for acima de R$50,00
-        if (total > 50){
-            double descVl = total - (total * ((double) 3 /100));
-            desc = descVl - total;
-            total = descVl;
-        }
-
-        lblUSDFinish.setText(getDollarPrice(total));
-        lblTotalFinish.setText("Total: "+formatPrice(total));
-        lblQtdFinish.setText("Quantidade: " + itens);
-        lblItensFinish.setText("Itens: " + formatPrice(totalLanches));
-        lblAdicionaisFinish.setText("Adicionais: "+formatPrice(adicionais));
-        lblDescontoFinish.setText("Descontos: " + (desc != 0 ? formatPrice(desc) + " (3%)" : "R$ 0,00"));
-        lblSubtotalFinish.setText("Subtotal: " + formatPrice(subTotal));
+        lblUSDFinish.setText(getDollarPrice(resumo.total));
+        lblTotalFinish.setText("Total: "+formatPrice(resumo.total));
+        lblQtdFinish.setText("Quantidade: " + resumo.itens);
+        lblItensFinish.setText("Itens: " + formatPrice(resumo.totalLanches));
+        lblAdicionaisFinish.setText("Adicionais: "+formatPrice(resumo.adicionais));
+        lblDescontoFinish.setText("Descontos: " + (resumo.desc != 0 ? formatPrice(resumo.desc) + " (3%)" : "R$ 0,00"));
+        lblSubtotalFinish.setText("Subtotal: " + formatPrice(resumo.subTotal));
 
         pCardapio.setVisible(false);
         pEditar.setVisible(false);

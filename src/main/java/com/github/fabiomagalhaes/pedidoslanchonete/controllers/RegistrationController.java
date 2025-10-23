@@ -1,6 +1,7 @@
 package com.github.fabiomagalhaes.pedidoslanchonete.controllers;
 
 import com.github.fabiomagalhaes.pedidoslanchonete.entities.LoggedUser;
+import com.github.fabiomagalhaes.pedidoslanchonete.services.RegisterService;
 import com.github.fabiomagalhaes.pedidoslanchonete.views.Registration;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -69,65 +70,24 @@ public class RegistrationController {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Registro de Usuário");
 
-        if (txtPrimeiroNome.getText().isEmpty()){
-            txtPrimeiroNome.requestFocus();
+        try {
+            RegisterService regService = new RegisterService();
+            regService.registerUser(txtPrimeiroNome.getText(), txtSegundoNome.getText(), txtSenha.getText(), txtSenha2.getText(), adm);
 
-            alert.setContentText("O campo de primeiro nome não pode estar vazio!");
+            FXMLLoader fxmlLoader = new FXMLLoader(Registration.class.getResource("main.fxml"));
+            Parent root = fxmlLoader.load();
+            Scene scene = new Scene(root, root.prefWidth(-1), root.prefHeight(-1));
+            Stage stage = new Stage();
+            stage.setTitle("Seja Bem Vindo(a)");
+            stage.setScene(scene);
+            stage.setResizable(false);
+            stage.show();
+
+            Stage wStage = (Stage) txtPrimeiroNome.getScene().getWindow();
+            wStage.close();
+        } catch (Exception e) {
+            alert.setContentText(e.getMessage());
             alert.showAndWait();
-            return;
-        }
-
-        if (txtSegundoNome.getText().isEmpty()){
-            txtSegundoNome.requestFocus();
-
-            alert.setContentText("O campo de segundo nome não pode estar vazio!");
-            alert.showAndWait();
-            return;
-        }
-
-        if (txtSenha.getText().isEmpty()){
-            txtSenha.requestFocus();
-
-            alert.setContentText("O campo de senha não pode estar vazio!");
-            alert.showAndWait();
-            return;
-        }
-
-        if (txtSenha2.getText().isEmpty()){
-            txtSenha2.requestFocus();
-
-            alert.setContentText("O campo para repetir a senha não pode estar vazio!");
-            alert.showAndWait();
-            return;
-        }
-
-        if (!txtSenha.getText().equals(txtSenha2.getText())){
-            txtSenha2.requestFocus();
-
-            alert.setContentText("As senhas não são iguais");
-            alert.showAndWait();
-            return;
-        }
-
-        LoggedUser user = getMainDB().insertUser(txtPrimeiroNome.getText(), txtSegundoNome.getText(), txtSenha.getText(), adm);
-        if (user != null) {
-            setUser(user);
-            try {
-                FXMLLoader fxmlLoader = new FXMLLoader(Registration.class.getResource("main.fxml"));
-                Parent root = fxmlLoader.load();
-                Scene scene = new Scene(root, root.prefWidth(-1), root.prefHeight(-1));
-                Stage stage = new Stage();
-                stage.setTitle("Seja Bem Vindo(a)");
-                stage.setScene(scene);
-                stage.setResizable(false);
-                stage.show();
-
-                Stage wStage = (Stage) txtPrimeiroNome.getScene().getWindow();
-                wStage.close();
-
-            } catch (Exception e){
-                e.printStackTrace();
-            }
         }
     }
 }

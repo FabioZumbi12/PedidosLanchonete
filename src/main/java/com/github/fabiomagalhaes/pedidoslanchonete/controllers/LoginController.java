@@ -1,6 +1,7 @@
 package com.github.fabiomagalhaes.pedidoslanchonete.controllers;
 
 import com.github.fabiomagalhaes.pedidoslanchonete.entities.LoggedUser;
+import com.github.fabiomagalhaes.pedidoslanchonete.services.LoginService;
 import com.github.fabiomagalhaes.pedidoslanchonete.views.Registration;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -40,30 +41,14 @@ public class LoginController {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Login no Sistema");
 
-        if (txtPrimeiroNome.getText().isEmpty()){
-            txtPrimeiroNome.requestFocus();
-
-            alert.setContentText("O campo de primeiro nome não pode estar vazio!");
+        try{
+            LoginService logService = new LoginService();
+            logService.autenticar(txtPrimeiroNome.getText(), txtSenha.getText());
+        } catch (Exception e) {
+            alert.setContentText(e.getMessage());
             alert.showAndWait();
             return;
         }
-
-        if (txtSenha.getText().isEmpty()){
-            txtSenha.requestFocus();
-
-            alert.setContentText("O campo de senha não pode estar vazio!");
-            alert.showAndWait();
-            return;
-        }
-
-        LoggedUser user = getMainDB().checkUserAndPass(txtPrimeiroNome.getText(), txtSenha.getText());
-        if (user == null){
-            alert.setContentText("Usuário ou senha inválidos!");
-            alert.showAndWait();
-            return;
-        }
-
-        setUser(user);
 
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(Registration.class.getResource("main.fxml"));
