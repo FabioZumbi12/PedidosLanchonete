@@ -24,14 +24,12 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.github.fabiomagalhaes.pedidoslanchonete.Launcher.getMainDB;
 import static com.github.fabiomagalhaes.pedidoslanchonete.Launcher.getUser;
 import static com.github.fabiomagalhaes.pedidoslanchonete.util.Helper.*;
 import static com.github.fabiomagalhaes.pedidoslanchonete.util.Helper.formatPrice;
-import static com.github.fabiomagalhaes.pedidoslanchonete.util.MainHelper.tagsIngredients;
 
 public class MainController {
     public Label lblUsername;
@@ -291,7 +289,7 @@ public class MainController {
         Image img = new Image(getClass().getResourceAsStream(getImageType(editingFood.getFoodType())));
         imgFood.setImage(img);
 
-        tagsIngredients(editingFood, flwIngredients);
+        orderService.tagsIngredients(editingFood, flwIngredients);
 
         lblFoodName.setText(editingFood.getFoodName());
         lblValorLanche.setText("Preço: " + formatPrice(editingFood.getFoodPrice()));
